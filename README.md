@@ -11,7 +11,7 @@ Goals:
 
 ## Plan
 1. Write YOLO and Mobile-Net Architecture to be compatible with new data
-2. Train off of TacoDataset, choose the best time running metrics and computationally efficient
+2. Train off of TacoDataset, choose the best time running metrics and computationally efficient (use 7 classes for output, define more directly internally)
 3. Work on frame-process.py, have it so that it can use the model to classify realtime
 4. Create front end process 
 5. Wrap into executable(if possible)
