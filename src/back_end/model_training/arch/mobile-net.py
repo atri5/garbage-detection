@@ -3,8 +3,15 @@
 @author Ayush Tripathi (atripathi7783@gmail.com)
 '''
 
+
+#imports
+import torch
 import torch.nn as nn
 from src.back_end.model_training.arch.interface import *
+from torch.utils.data import DataLoader
+from pathlib import Path
+from typing import Any
+
 
 
 
@@ -71,10 +78,20 @@ class MobileNetV1(nn.Module, CVModel):
             nn.Linear(1024, num_classes),
         )
     
-    def forward():
-        pass
+    def forward(self, x):
+        #run through features and pool
+        x = self.features(x)
+        x = self.avgpool(x)
+
+        #reshaping tensor to linear classifier
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        return x        
+
 
     def train_model():
+
+        
         pass
     
     def test_model():
