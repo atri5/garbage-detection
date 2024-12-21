@@ -3,7 +3,11 @@
 
 '''
 
-def yolo():
+#imports
+import torch.nn as nn
+
+
+def yolo(nn.Module, ):
 
     def __init__():
         pass

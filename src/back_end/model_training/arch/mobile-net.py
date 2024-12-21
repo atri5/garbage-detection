@@ -16,6 +16,11 @@ from typing import Any
 
 
 '''
+To Do:
+- Use a pre-trained model from Image-Net 
+- train on TACO afterwards 
+
+
 DepthWiseSeperable is a class that decomposes typical convolution into depthwise and pointwise convolutions, requiring less resources as matrices are smaller in dimension. Adapted from Karunesh Upadhyay's description. 
 '''
 
@@ -89,16 +94,126 @@ class MobileNetV1(nn.Module, CVModel):
         return x        
 
 
-    def train_model():
+def train_model(self, train_loader: DataLoader, val_loader: DataLoader, **kwargs) -> dict[str, Any]:
+    """
+    Train the MobileNetV1 model on the provided dataset.
+    
+    Args:
+        train_loader (DataLoader): DataLoader for the training dataset.
+        val_loader (DataLoader): DataLoader for the validation dataset.
+        **kwargs: Additional keyword arguments for training configuration.
 
+    Returns:
+        dict[str, Any]: Dictionary containing training history and final validation accuracy.
+    """
+    # Get hyperparameters and defaults
+    num_epochs = kwargs.get("num_epochs", 10)
+    lr = kwargs.get("lr", 0.01)
+    weight_decay = kwargs.get("weight_decay", 1e-4)
+    device = kwargs.get("device", "cuda" if torch.cuda.is_available() else "cpu")
+    
+    # Define optimizer, loss function, and scheduler
+    optimizer = kwargs.get("optimizer", torch.optim.SGD(self.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay))
+    criterion = kwargs.get("criterion", nn.CrossEntropyLoss())
+    scheduler = kwargs.get("scheduler", torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1))
+    
+    # Move model to the appropriate device
+    self.to(device)
+    
+    # Training history
+    history = {"train_loss": [], "val_loss": [], "val_accuracy": []}
+    
+    # Training loop
+    for epoch in range(num_epochs):
+        self.train()
+        train_loss = 0.0
         
-        pass
+        for images, labels in train_loader:
+            images, labels = images.to(device), labels.to(device)
+            
+            # Forward pass
+            outputs = self(images)
+            loss = criterion(outputs, labels)
+            
+            # Backward pass and optimization
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+            train_loss += loss.item()
+        
+        # Average training loss for the epoch
+        avg_train_loss = train_loss / len(train_loader)
+        history["train_loss"].append(avg_train_loss)
+        
+        # Validation phase
+        val_loss, val_accuracy = self.validate_model(val_loader, criterion=criterion, device=device)
+        history["val_loss"].append(val_loss)
+        history["val_accuracy"].append(val_accuracy)
+        
+        # Print progress
+        print(f"Epoch [{epoch+1}/{num_epochs}]: Train Loss = {avg_train_loss:.4f}, Val Loss = {val_loss:.4f}, Val Accuracy = {val_accuracy:.4f}")
+        
+        # Adjust learning rate
+        scheduler.step()
     
-    def test_model():
-        pass
-    
-    def predict():
-        pass
+    return history
 
-    def save():
-        pass
+def validate_model(self, loader: DataLoader, criterion: nn.Module, device: str = "cuda") -> tuple[float, float]:
+    """
+    Validate the model on the given dataset.
+
+    Args:
+        loader (DataLoader): DataLoader for the validation dataset.
+        criterion (nn.Module): Loss function for validation.
+        device (str): Device to use for validation.
+
+    Returns:
+        tuple[float, float]: Validation loss and accuracy.
+    """
+    self.eval()
+    val_loss = 0.0
+    correct = 0
+    total = 0
+    
+    with torch.no_grad():
+        for images, labels in loader:
+            images, labels = images.to(device), labels.to(device)
+            
+            # Forward pass
+            outputs = self(images)
+            loss = criterion(outputs, labels)
+            val_loss += loss.item()
+            
+            # Calculate accuracy
+            _, predicted = torch.max(outputs, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    
+    avg_val_loss = val_loss / len(loader)
+    val_accuracy = correct / total
+    return avg_val_loss, val_accuracy
+        
+
+def test_model():
+    pass
+
+def predict():
+    pass
+
+def save():
+    pass
+
+
+if __name__ == "__main__":
+    model = MobileNetV1(num_classes=7)  # 7 classes for TACO dataset
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=32)
+
+    history = model.train_model(
+        train_loader=train_loader, 
+        val_loader=val_loader, 
+        num_epochs=15, 
+        lr=0.001, 
+        device="cuda"
+    )
